@@ -1,31 +1,38 @@
-version: '3.8'
 services:
   # The "Data Lake" Storage
   catalog:
-    image: tabulario/iceberg-rest
+    image: tabulario/iceberg-rest:latest
+    container_name: aether-catalog
     ports:
       - "8181:8181"
     environment:
       - CATALOG_WAREHOUSE=s3a://warehouse/
       - CATALOG_IO_IMPL=org.apache.iceberg.aws.s3.S3FileIO
 
-  # The Streaming Heart
+  # Swapped to a more reliable Kafka image for Arch/Docker
   kafka:
-    image: bitnami/kafka:latest
+    image: apache/kafka:latest
+    container_name: aether-kafka
     ports:
       - "9092:9092"
     environment:
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@localhost:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
 
-  # The State Manager (For the "Pause/Intervene" logic)
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
+    container_name: aether-redis
     ports:
       - "6379:6379"
 
-  # The Audit Database
   postgres:
-    image: postgres:15
+    image: postgres:15-alpine
+    container_name: aether-postgres
     environment:
       - POSTGRES_PASSWORD=aether_admin
       - POSTGRES_DB=aether_audit
