@@ -4,7 +4,7 @@ from aiokafka import AIOKafkaConsumer
 from redis import Redis
 
 # Using a fresh group_id to force Kafka to reset the coordinator
-GROUP_ID = "gatekeeper-v2" 
+GROUP_ID = "gatekeeper-v3" 
 
 redis_client = Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
