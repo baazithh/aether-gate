@@ -3,10 +3,9 @@ import asyncio
 from aiokafka import AIOKafkaConsumer
 from redis import Redis
 
-# Use a unique group ID to avoid the Kafka Error 15
-GROUP_ID = "gatekeeper-v3-final" 
+# Using a fresh group_id to force Kafka to reset the coordinator
+GROUP_ID = "gatekeeper-final-v1" 
 
-# Connect to Redis
 redis_client = Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
 async def start_gatekeeper():
@@ -18,7 +17,6 @@ async def start_gatekeeper():
         retry_backoff_ms=500
     )
     
-    # Retry loop to handle Kafka startup lag
     connected = False
     while not connected:
         try:
@@ -33,7 +31,7 @@ async def start_gatekeeper():
         async for msg in consumer:
             data = json.loads(msg.value)
             
-            # Logic: Check for anomalies
+            # Logic: Check for "Dirty" data
             if data.get('currency') == "INVALID_COIN" or "EXPLOIT" in data.get('user_email', ''):
                 print(f"⚠️ INTERVENTION REQUIRED: Transaction {data['transaction_id']}")
                 redis_client.setex(f"intervention:{data['transaction_id']}", 3600, json.dumps(data))
